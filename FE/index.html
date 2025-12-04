@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Upload Files</title>
+</head>
+<body>
+  <h2>Upload nhiều file (upload/large-file)</h2>
+  <form id="largeFileForm" enctype="multipart/form-data">
+    <input id="largeFileInput" type="file" name="file" multiple />
+    <input type="text" name="description" placeholder="Mô tả" />
+    <button type="submit">Upload nhiều file</button>
+  </form>
+  <div>
+    <strong>Preview:</strong>
+    <div id="largeFilePreview"></div>
+  </div>
+  <div>
+    <strong>Kết quả:</strong>
+    <pre id="largeFileResult"></pre>
+  </div>
+
+  <hr />
+
+  <h2>Upload avatar (upload/avt)</h2>
+  <form id="avatarForm" enctype="multipart/form-data">
+    <input id="avatarInput" type="file" name="file" accept=".jpg,.png,.gif" />
+    <button type="submit">Upload avatar</button>
+  </form>
+  <div>
+    <strong>Preview:</strong><br />
+    <img id="avatarPreview" src="" alt="Avatar preview" style="max-width: 200px; display: none;" />
+  </div>
+  <div>
+    <strong>Kết quả:</strong>
+    <pre id="avatarResult"></pre>
+  </div>
+
+  <script>
+    const BASE_URL = 'http://localhost:3000';
+
+    // Preview avatar
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+
+    avatarInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        avatarPreview.style.display = 'none';
+        avatarPreview.src = '';
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      avatarPreview.src = url;
+      avatarPreview.style.display = 'block';
+    });
+
+    // Preview nhiều file
+    const largeFileInput = document.getElementById('largeFileInput');
+    const largeFilePreview = document.getElementById('largeFilePreview');
+
+    largeFileInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      largeFilePreview.innerHTML = '';
+
+      files.forEach((file) => {
+        const container = document.createElement('div');
+        container.style.marginBottom = '8px';
+
+        const info = document.createElement('div');
+        info.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+        container.appendChild(info);
+
+        if (file.type && file.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.style.maxWidth = '150px';
+          img.style.display = 'block';
+          img.style.marginTop = '4px';
+          img.src = URL.createObjectURL(file);
+          container.appendChild(img);
+        }
+
+        largeFilePreview.appendChild(container);
+      });
+    });
+
+    // Upload nhiều file
+    document.getElementById('largeFileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch(`${BASE_URL}/user/upload/large-file`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const text = await res.text(); // backend có thể trả text hoặc json
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+
+        document.getElementById('largeFileResult').textContent =
+          typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('largeFileResult').textContent = 'Lỗi: ' + err;
+      }
+    });
+
+    // Upload avatar
+    document.getElementById('avatarForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch(`${BASE_URL}/user/upload/avt`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = text;
+        }
+
+        document.getElementById('avatarResult').textContent =
+          typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('avatarResult').textContent = 'Lỗi: ' + err;
+      }
+    });
+  </script>
+</body>
+</html>
